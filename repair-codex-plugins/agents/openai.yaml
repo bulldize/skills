@@ -1,0 +1,4 @@
+interface:
+  display_name: "Repair Codex Plugins"
+  short_description: "Restore Codex bundled plugins after updates."
+  default_prompt: "Use $repair-codex-plugins to restore my Codex plugins after an update."
