@@ -5,7 +5,6 @@ import argparse
 import json
 import os
 import re
-import shutil
 import subprocess
 import sys
 import time
@@ -18,6 +17,7 @@ from typing import Any
 
 DEFAULT_API_BASE = "https://token-plan-cn.xiaomimimo.com/v1"
 DEFAULT_VIDEO_FORMAT = "bv*+ba/best"
+DEFAULT_FINAL_DIR = Path("/Users/bulldize/Desktop/有限元方法/Dealii教程中")
 
 
 @dataclass
@@ -395,6 +395,14 @@ def cmd_download(args: argparse.Namespace) -> int:
 
 
 def cmd_softsub(args: argparse.Namespace) -> int:
+  output = args.output
+  if output is None:
+    if args.lecture is None or args.summary_title is None:
+      print("--output or both --lecture and --summary-title are required", file=sys.stderr)
+      return 2
+    title = safe_filename_part(args.summary_title)
+    output = args.final_dir / f"{lecture_label(args.lecture)} - {title}.{args.lang}.softsub.mp4"
+  output.parent.mkdir(parents=True, exist_ok=True)
   language_metadata = args.language if "=" in args.language else f"language={args.language}"
   title_metadata = args.title if "=" in args.title else f"title={args.title}"
   command = [
@@ -416,9 +424,10 @@ def cmd_softsub(args: argparse.Namespace) -> int:
     language_metadata,
     "-metadata:s:s:0",
     title_metadata,
-    str(args.output),
+    str(output),
   ]
   run_command(command)
+  print(output)
   return 0
 
 
@@ -437,27 +446,6 @@ def lecture_label(value: str) -> str:
   if value.lower().startswith("lecture "):
     return value
   return f"Lecture {value}"
-
-
-def softsub_video_suffix(source: Path) -> str:
-  name = source.name
-  for marker in [".zh-CN.softsub", ".softsub"]:
-    index = name.rfind(marker)
-    if index >= 0:
-      suffix = name[index + len(marker):]
-      return suffix or source.suffix or ".mp4"
-  return source.suffix or ".mp4"
-
-
-def cmd_friendly_name(args: argparse.Namespace) -> int:
-  title = safe_filename_part(args.summary_title)
-  suffix = softsub_video_suffix(args.source)
-  filename = f"{lecture_label(args.lecture)} - {title}.{args.lang}.softsub{suffix}"
-  output = args.out_dir / filename
-  args.out_dir.mkdir(parents=True, exist_ok=True)
-  shutil.copy2(args.source, output)
-  print(output)
-  return 0
 
 
 def cmd_qa(args: argparse.Namespace) -> int:
@@ -527,18 +515,14 @@ def main() -> int:
   p = sub.add_parser("softsub")
   p.add_argument("--video", required=True, type=Path)
   p.add_argument("--subtitle", required=True, type=Path)
-  p.add_argument("--output", required=True, type=Path)
+  p.add_argument("--output", type=Path)
+  p.add_argument("--final-dir", type=Path, default=DEFAULT_FINAL_DIR)
+  p.add_argument("--lecture")
+  p.add_argument("--summary-title")
+  p.add_argument("--lang", default="zh-CN")
   p.add_argument("--language", default="chi")
   p.add_argument("--title", default="Chinese Math Subtitles")
   p.set_defaults(func=cmd_softsub)
-
-  p = sub.add_parser("friendly-name")
-  p.add_argument("--source", required=True, type=Path)
-  p.add_argument("--out-dir", required=True, type=Path)
-  p.add_argument("--lecture", required=True)
-  p.add_argument("--summary-title", required=True)
-  p.add_argument("--lang", default="zh-CN")
-  p.set_defaults(func=cmd_friendly_name)
 
   p = sub.add_parser("qa")
   p.add_argument("--srt", required=True, type=Path)

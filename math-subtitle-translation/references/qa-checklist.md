@@ -36,4 +36,5 @@
 - Subtitle stream language is `chi`.
 - MP4 soft subtitles use MP4-safe code tokens.
 - Roundtrip-extracted subtitle preserves `Point[2]`, `GeometryInfo[2]`, and other key tokens.
-- A viewing-friendly copy exists: `Lecture <N> - <Chinese summary title>.zh-CN.softsub.mp4`.
+- Final video is in `/Users/bulldize/Desktop/有限元方法/Dealii教程中`.
+- Final video uses only `Lecture <N> - <Chinese summary title>.zh-CN.softsub.mp4`; do not deliver `<video-id>.zh-CN.softsub.mp4`.

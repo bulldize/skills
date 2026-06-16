@@ -53,9 +53,9 @@ yt-dlp -f 'bv*+ba/best' --merge-output-format mp4 -o '<video-id>.video.highest.%
 
 If the highest streams are not MP4-compatible, preserve quality with MKV rather than falling back to a low-resolution MP4.
 
-## Friendly Final Filenames Matter
+## Final Videos Use Normal Viewing Names Only
 
-Keep the machine-readable `*.zh-CN.softsub.mp4`, but also create a viewing-friendly copy named `Lecture <N> - <Chinese summary title>.zh-CN.softsub.mp4`. Get the lecture number from the source title, metadata, or manifest. Summarize the Chinese title from the actual lecture content.
+Put final videos in `/Users/bulldize/Desktop/有限元方法/Dealii教程中` and name them `Lecture <N> - <Chinese summary title>.zh-CN.softsub.mp4`. Get the lecture number from the source title, metadata, or manifest. Summarize the Chinese title from the actual lecture content. Do not deliver `<video-id>.zh-CN.softsub.mp4`; use that only as a temporary/debug artifact if needed.
 
 ## ffmpeg May Lack Hard-Subtitle Filters
 
