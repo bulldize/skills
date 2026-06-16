@@ -1,0 +1,4 @@
+interface:
+  display_name: "Math Subtitle Translation"
+  short_description: "Translate technical lecture subtitles into Chinese"
+  default_prompt: "Use $math-subtitle-translation to create professional Chinese subtitles for this technical lecture video."
