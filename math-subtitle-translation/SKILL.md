@@ -12,14 +12,16 @@ description: Professional Chinese subtitle workflow for mathematical, scientific
 3. Translate with a glossary and checkpoint every batch. Use small batches, usually 10-18 cues, and require strict JSON output.
 4. Polish after translation. Fix ASR errors, remove filler-only cues, preserve code/API names, and export clean SRT/VTT from structured cue JSON.
 5. QA before delivery. Check numbering, monotonic timing, empty cues, terminology, code tokens, and soft-subtitle roundtrip.
-6. Package video only after subtitle QA. For MP4 `mov_text`, create an MP4-safe SRT that replaces code angle brackets such as `Point<2>` with `Point[2]`.
+6. Package video only after subtitle QA. Download the highest available quality with `bv*+ba/best`; do not use low-quality convenience formats such as `-f 18` for final video.
+7. For MP4 `mov_text`, create an MP4-safe SRT that replaces code angle brackets such as `Point<2>` with `Point[2]`.
+8. Keep the machine-readable `*.zh-CN.softsub.mp4` name and add a viewing-friendly copy named `Lecture <N> - <Chinese summary title>.zh-CN.softsub.mp4`.
 
 ## Resources
 
 - Read `references/pitfalls.md` before running a new pipeline or debugging subtitle output.
 - Read `references/glossary.md` for math/FEM/deal.II terminology and common ASR corrections.
 - Read `references/qa-checklist.md` before final delivery.
-- Use `scripts/subtitle_pipeline.py` for reusable cue generation, translation, export, MP4-safe conversion, and QA checks.
+- Use `scripts/subtitle_pipeline.py` for reusable cue generation, translation, export, highest-quality download, MP4-safe conversion, soft-subtitle packaging, friendly naming, and QA checks.
 
 ## Commands
 
@@ -59,6 +61,43 @@ python /Users/bulldize/.codex/skills/math-subtitle-translation/scripts/subtitle_
   --video-id <video-id>
 ```
 
+Download the highest-quality source video:
+
+```bash
+python /Users/bulldize/.codex/skills/math-subtitle-translation/scripts/subtitle_pipeline.py download \
+  --url '<youtube-url>' \
+  --out-dir subtitles/<video-id> \
+  --video-id <video-id> \
+  --merge-output-format mp4
+```
+
+Create an MP4-safe subtitle file:
+
+```bash
+python /Users/bulldize/.codex/skills/math-subtitle-translation/scripts/subtitle_pipeline.py mp4-safe \
+  --srt subtitles/<video-id>/<video-id>.zh-CN.srt \
+  --output subtitles/<video-id>/<video-id>.zh-CN.mp4-safe.srt
+```
+
+Package soft subtitles:
+
+```bash
+python /Users/bulldize/.codex/skills/math-subtitle-translation/scripts/subtitle_pipeline.py softsub \
+  --video subtitles/<video-id>/<video-id>.video.highest.mp4 \
+  --subtitle subtitles/<video-id>/<video-id>.zh-CN.mp4-safe.srt \
+  --output subtitles/<video-id>/<video-id>.zh-CN.softsub.mp4
+```
+
+Create a viewing-friendly final filename:
+
+```bash
+python /Users/bulldize/.codex/skills/math-subtitle-translation/scripts/subtitle_pipeline.py friendly-name \
+  --source subtitles/<video-id>/<video-id>.zh-CN.softsub.mp4 \
+  --out-dir subtitles/<video-id> \
+  --lecture <N> \
+  --summary-title '<Chinese summary title>'
+```
+
 Run QA checks:
 
 ```bash
@@ -76,7 +115,8 @@ Deliver at least:
 
 When video packaging is requested, also deliver:
 
+- `*.video.highest.<ext>`
 - `*.zh-CN.mp4-safe.srt`
 - `*.zh-CN.softsub.mp4`
+- `Lecture <N> - <Chinese summary title>.zh-CN.softsub.mp4`
 - `embedded.zh-CN.roundtrip.srt` for verification
-

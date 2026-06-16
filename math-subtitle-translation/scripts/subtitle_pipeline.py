@@ -5,6 +5,8 @@ import argparse
 import json
 import os
 import re
+import shutil
+import subprocess
 import sys
 import time
 import urllib.error
@@ -15,6 +17,7 @@ from typing import Any
 
 
 DEFAULT_API_BASE = "https://token-plan-cn.xiaomimimo.com/v1"
+DEFAULT_VIDEO_FORMAT = "bv*+ba/best"
 
 
 @dataclass
@@ -367,6 +370,96 @@ def cmd_mp4_safe(args: argparse.Namespace) -> int:
   return 0
 
 
+def run_command(command: list[str]) -> None:
+  print(" ".join(command), flush=True)
+  subprocess.run(command, check=True)
+
+
+def cmd_download(args: argparse.Namespace) -> int:
+  args.out_dir.mkdir(parents=True, exist_ok=True)
+  output_template = str(args.out_dir / f"{args.video_id}.video.highest.%(ext)s")
+  command = [
+    args.yt_dlp,
+    "-f",
+    args.format,
+    "--merge-output-format",
+    args.merge_output_format,
+    "-o",
+    output_template,
+    args.url,
+  ]
+  if args.keep_intermediate:
+    command.insert(1, "-k")
+  run_command(command)
+  return 0
+
+
+def cmd_softsub(args: argparse.Namespace) -> int:
+  language_metadata = args.language if "=" in args.language else f"language={args.language}"
+  title_metadata = args.title if "=" in args.title else f"title={args.title}"
+  command = [
+    "ffmpeg",
+    "-y",
+    "-i",
+    str(args.video),
+    "-i",
+    str(args.subtitle),
+    "-map",
+    "0",
+    "-map",
+    "1",
+    "-c",
+    "copy",
+    "-c:s",
+    "mov_text",
+    "-metadata:s:s:0",
+    language_metadata,
+    "-metadata:s:s:0",
+    title_metadata,
+    str(args.output),
+  ]
+  run_command(command)
+  return 0
+
+
+def safe_filename_part(text: str) -> str:
+  text = re.sub(r"[/:*?\"<>|\\]", "-", text)
+  text = re.sub(r"\s+", " ", text).strip()
+  text = text.rstrip(". ")
+  return text or "Untitled"
+
+
+def lecture_label(value: str) -> str:
+  value = safe_filename_part(value)
+  match = re.search(r"(?:lecture\s*)?(\d+(?:\.\d+)?)", value, flags=re.IGNORECASE)
+  if match:
+    return f"Lecture {match.group(1)}"
+  if value.lower().startswith("lecture "):
+    return value
+  return f"Lecture {value}"
+
+
+def softsub_video_suffix(source: Path) -> str:
+  name = source.name
+  for marker in [".zh-CN.softsub", ".softsub"]:
+    index = name.rfind(marker)
+    if index >= 0:
+      suffix = name[index + len(marker):]
+      return suffix or source.suffix or ".mp4"
+  return source.suffix or ".mp4"
+
+
+def cmd_friendly_name(args: argparse.Namespace) -> int:
+  title = safe_filename_part(args.summary_title)
+  suffix = softsub_video_suffix(args.source)
+  filename = f"{lecture_label(args.lecture)} - {title}.{args.lang}.softsub{suffix}"
+  output = args.out_dir / filename
+  args.out_dir.mkdir(parents=True, exist_ok=True)
+  shutil.copy2(args.source, output)
+  print(output)
+  return 0
+
+
 def cmd_qa(args: argparse.Namespace) -> int:
   text = args.srt.read_text(encoding="utf-8")
   blocks = [block for block in text.strip().split("\n\n") if block.strip()]
@@ -420,6 +513,32 @@ def main() -> int:
   p.add_argument("--srt", required=True, type=Path)
   p.add_argument("--output", required=True, type=Path)
   p.set_defaults(func=cmd_mp4_safe)
+
+  p = sub.add_parser("download")
+  p.add_argument("--url", required=True)
+  p.add_argument("--out-dir", required=True, type=Path)
+  p.add_argument("--video-id", required=True)
+  p.add_argument("--format", default=DEFAULT_VIDEO_FORMAT)
+  p.add_argument("--merge-output-format", default="mkv")
+  p.add_argument("--yt-dlp", default="yt-dlp")
+  p.add_argument("--keep-intermediate", action="store_true")
+  p.set_defaults(func=cmd_download)
+
+  p = sub.add_parser("softsub")
+  p.add_argument("--video", required=True, type=Path)
+  p.add_argument("--subtitle", required=True, type=Path)
+  p.add_argument("--output", required=True, type=Path)
+  p.add_argument("--language", default="chi")
+  p.add_argument("--title", default="Chinese Math Subtitles")
+  p.set_defaults(func=cmd_softsub)
+
+  p = sub.add_parser("friendly-name")
+  p.add_argument("--source", required=True, type=Path)
+  p.add_argument("--out-dir", required=True, type=Path)
+  p.add_argument("--lecture", required=True)
+  p.add_argument("--summary-title", required=True)
+  p.add_argument("--lang", default="zh-CN")
+  p.set_defaults(func=cmd_friendly_name)
 
   p = sub.add_parser("qa")
   p.add_argument("--srt", required=True, type=Path)

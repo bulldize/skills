@@ -43,6 +43,20 @@ If empty/filler cues are removed, re-number output SRT blocks from 1. Do not reu
 
 MP4 `mov_text` treats `<...>` as tags. Original SRT/VTT may keep `Point<2>`, but MP4-safe SRT should use `Point[2]`, `GeometryInfo[2]`, etc. Always roundtrip-extract the embedded subtitle and check key tokens.
 
+## Do Not Use `-f 18` for Final Video
+
+`yt-dlp -f 18` is a convenient low-quality MP4, commonly 360p. Final packaged lecture videos should use the highest available quality:
+
+```bash
+yt-dlp -f 'bv*+ba/best' --merge-output-format mp4 -o '<video-id>.video.highest.%(ext)s' '<url>'
+```
+
+If the highest streams are not MP4-compatible, preserve quality with MKV rather than falling back to a low-resolution MP4.
+
+## Friendly Final Filenames Matter
+
+Keep the machine-readable `*.zh-CN.softsub.mp4`, but also create a viewing-friendly copy named `Lecture <N> - <Chinese summary title>.zh-CN.softsub.mp4`. Get the lecture number from the source title, metadata, or manifest. Summarize the Chinese title from the actual lecture content.
+
 ## ffmpeg May Lack Hard-Subtitle Filters
 
 Homebrew `ffmpeg` may not include `subtitles` / `ass` filters. Default to soft subtitles unless a libass-capable build is available.
@@ -50,4 +64,3 @@ Homebrew `ffmpeg` may not include `subtitles` / `ass` filters. Default to soft s
 ## ASR Endpoint Compatibility Is Uncertain
 
 A model list may include ASR models without exposing an OpenAI-compatible `/audio/transcriptions` endpoint. Probe with a short sample; if it fails, continue with YouTube `json3` timing instead of blocking.
-

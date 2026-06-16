@@ -30,8 +30,10 @@
 
 ## Video Packaging Checks
 
+- Source video was downloaded with the highest available quality, not `yt-dlp -f 18`.
+- Packaged video resolution matches the highest-quality source file used for packaging.
 - `ffprobe` shows video, audio, and subtitle streams.
 - Subtitle stream language is `chi`.
 - MP4 soft subtitles use MP4-safe code tokens.
 - Roundtrip-extracted subtitle preserves `Point[2]`, `GeometryInfo[2]`, and other key tokens.
-
+- A viewing-friendly copy exists: `Lecture <N> - <Chinese summary title>.zh-CN.softsub.mp4`.
