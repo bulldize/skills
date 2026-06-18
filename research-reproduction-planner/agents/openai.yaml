@@ -1,0 +1,4 @@
+interface:
+  display_name: "Research Reproduction Planner"
+  short_description: "Plan reproducible paper-to-local workflows"
+  default_prompt: "Use $research-reproduction-planner to turn this paper reproduction task into a source-grounded, goal-mode project workflow."
